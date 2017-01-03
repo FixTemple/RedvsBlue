@@ -5,7 +5,10 @@ from afxres import AFX_IDC_COLOR_BLUE
 def Main():
     host = "127.0.0.1"
     port = 10000
-     
+    
+    #create two sockets, one for each client. 
+    #Two sockets can use the same port and host (I think) 
+    #What is wrong here?
     redSocket = socket.socket()
     redSocket.bind((host,port))
     blueSocket = socket.socket()
