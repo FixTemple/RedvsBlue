@@ -4,8 +4,8 @@ def Main():
         host = '127.0.0.1'
         port = 10000
          
-        mySocket = socket.socket()
-        mySocket.connect((host,port))
+        blueSocket = socket.socket()
+        blueSocket.connect((host,port))
          
         message = input("Enter your role (defense/attack)\n -> ")
         
