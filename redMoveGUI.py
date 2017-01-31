@@ -1,3 +1,14 @@
+# Programmer: Elliott Fix
+# Temple University, College of Engineering
+# Start Date: December, 2016
+# Version: 0.1
+# Code inspired by Shakeel Osmani
+#        https://shakeelosmani.wordpress.com/2015/04/13/python-3-socket-programming-example/
+# Description: A basic CLient-Server program that features two client GUIs for
+#              two players to compete in a game setting that models the attack
+#              and defense of Internet security.
+
+
 from tkinter import *
 import socket
 
@@ -9,15 +20,10 @@ def redMove():
     ##Set up connection to server
     host = '127.0.0.1'
     port = 10000
-         
+    message = "Connection Successful"
+    
     redSocket = socket.socket()
     redSocket.connect((host,port))
-    
-    message = input("Message to Server\n -> ")
-    redSocket.send(message.encode())
-    data = redSocket.recv(1024).decode()
-    print ('Received from server: ' + data)
-    message = input(" -> ")
     ##
     
     
@@ -57,6 +63,12 @@ def redMove():
             button2C.configure(state = DISABLED) ###
             button3C.configure(state = DISABLED) ###
             buttonAttack.configure(state = NORMAL)
+            
+            message = input("1A")
+            redSocket.send(message.encode())
+            data = redSocket.recv(1024).decode()
+            print ('Received from server: ' + data)
+            
         def Color1B():
             button1B.configure(bg=color)
             Moves.pointTotal = Moves.pointTotal + Moves.point1B
@@ -201,7 +213,7 @@ def redMove():
     label_C = Label(root, text = 'C', height=height, width=width)
     label_pointTotal = Label(root, text = "Point Total: " + str(Moves.pointTotal), height=height, width=width)
     label_Actions = Label(root, text = 'Actions: ', height=height, width=width)
-    label_Server = Label(root, text = "From Server: " + str(message), height=height, width=width)
+    label_Server = Label(root, text = "From Server: " + str(message), height=height)
     
     #Define buttons
     button1A = Button(root, text = Moves.point1A, command = Moves.Color1A, height=height, width=width, state = DISABLED)
