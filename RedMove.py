@@ -163,7 +163,7 @@ class RedMove(object):
 
  
  
-    def process_incoming(self):    
+    def processIncoming(self):    
         while self.queue.qsize():
             try:
                 msg = self.queue.get(0).strip()
