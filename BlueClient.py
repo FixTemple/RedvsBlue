@@ -5,7 +5,7 @@ import tincanchat
 import random
 import socket
 from multiprocessing import Queue
-from RedMove import RedMove
+from BlueMove import BlueMove
 
 class ThreadedClient:
     """
