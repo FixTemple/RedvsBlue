@@ -18,9 +18,9 @@ class RedBlueServer:
     PORT = tincanchat.PORT
     send_queue = {}
     red_turn = True
-    map  = {'13': '', '23': '', '33': '',
-            '12': '', '22': '', '32': '',
-            '11': '', '21': '', '31': ''};
+    grid_map  = {'13': '', '23': '', '33': '',
+                 '12': '', '22': '', '32': '',
+                 '11': '', '21': '', '31': ''};
     
     
     def __init__(self):
@@ -33,15 +33,13 @@ class RedBlueServer:
             client_sock, addr = server.accept()
             q = queue.Queue()
             self.send_queue[client_sock.fileno()] = q
-            # TODO: see send_queue
             eventlet.spawn_n(self.handle_client_recv, client_sock, addr)
             eventlet.spawn_n(self.handle_client_send, client_sock, q, addr)
             print('Connection from {}'.format(addr))
             
     def handle_client_recv(self, sock, addr):
-        """ Receive messages from client and broadcast them to other clients until client disconnects """
+        # Receive messages from client and broadcast them to other clients until client disconnects
         rest = bytes()
-        
     
         while True:
             try:
@@ -50,27 +48,27 @@ class RedBlueServer:
                 self.handle_disconnect(sock, addr)
                 break
             red_turn = self.red_turn
-            map =self.map
+            grid_map = self.grid_map
             for msg in msgs:
-                print("update red_turn value is ")
+                print("Update: red_turn value is ")
                 print(red_turn)
                 
                 if (msg[0]=='R' and red_turn):
                     print("\nRED MESSAGE")
                     cord = msg[-2:]
                     if (red_turn):
-                        if (len(map[cord])==0):
-                            self.map[cord] = 'R'
+                        if (len(grid_map[cord])==0):
+                            self.grid_map[cord] = 'R'
                             msg='M-'+cord+':R'
                         else:
-                            msg='M-'+cord+':BX'        # BX: Blue has blocked this position
+                            msg='M-'+cord+'BX'        # BX: Blue has blocked this position
                         self.red_turn = False
                         self.broadcast_msg(msg)
                     
                         msg = '{}:{}'.format(addr, msg)
                         print("--->" + msg )
                     else:
-                        msg = '* Not a valid move; wait your turn *'
+                        msg = '* Not a valid move; wait your turn!'
                         msg = '{}:{}'.format(addr, msg)
                         print("--->" + msg)
                         self.red_turn = False
@@ -78,33 +76,38 @@ class RedBlueServer:
                     print(self.red_turn)
                     print('\n\n')
                     
-                elif (msg[0]=='B' and red_turn == False):      
+                elif (msg[0]=='B' and not red_turn):      
                     print("\nBLUE MESSAGE")
-                   
                     cord = msg[-2:]
-                    if (red_turn == False):
-                        if(len(map[cord])==0):
-                            self.map[cord] = 'B'
+                    if (not red_turn):
+                        if(len(grid_map[cord])==0):
+                            self.grid_map[cord] = 'B'
                             msg='M-'+cord+':B'
                         else:
-                            msg='M-'+cord+':RX'        # RX: Red has blocked this position
+                            msg='M-'+cord+'RX'        # RX: Red has blocked this position
                         self.red_turn = True
                         self.broadcast_msg(msg)
-                        
                     else:
-                        msg = '* Not a valid move; wait your turn *'
-                        msg = '{}:{}'.format(addr, msg)
-                        print("--->" + msg)
-                        self.red_turn = True
+                        msg = '* Not a valid move; wait your turn!'
+                        #msg = '{}:{}'.format(addr, msg)
+                        #print("--->" + msg)
+                        #self.red_turn = True
                         self.broadcast_msg(msg)
-    
                     print(self.red_turn)
                     msg = '{}:{}'.format(addr, msg)
                     print("--->" + msg)
                     print('\n\n')
                     
+                elif (msg[0]=='R' and not red_turn):
+                    msg = "*R Invalid Move: Wait your turn!"
+                    self.broadcast_msg(msg)
+                    
+                elif (msg[0]=='B' and red_turn):
+                    msg = "*B Invalid Move: Wait your turn!"
+                    self.broadcast_msg(msg)
+                    
                 else:
-                    print("STUB")
+                    print("ERROR: Unidentified Message")
     
     def handle_client_send(self, sock, q, addr):
         """ Monitor queue for new messages, send them to client as they arrive """
@@ -130,17 +133,19 @@ class RedBlueServer:
         fd = sock.fileno()
         # Get send_queue for this client
         q = self.send_queue.get(fd, None)
-        # If we find a queue then this disconnect has not yet
-        # been handled
+        # If we find a queue then this disconnect has not yet been handled
+        self.red_turn = True
         if q:
             q.put(None)
             del self.send_queue[fd]
             addr = sock.getpeername()
             print('Client {} disconnected'.format(addr))
             sock.close()
+
     
 
 if __name__ == '__main__':
     
     newserver = RedBlueServer()
+    
     
