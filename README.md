@@ -9,7 +9,9 @@ The server must be started before either client.
 
 
 ```
-    sudo apt-get install python3-pip python3-tk
+    sudo apt-get install python3-pip python3-tk git
+    git clone https://github.com/lbaitemple/RedvsBlue
+    cd RedvsBlue
     pip3 install -r requirements.txt
 ```
 
