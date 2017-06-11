@@ -34,7 +34,7 @@ class ThreadedClient:
         print('Connected to {}:{}'.format(HOST, PORT))
         
         # Create thread for handling user input and message sending
-        thread = threading.Thread(target=RedMove.handle_input, args=[self.sock], daemon=True)
+        thread = threading.Thread(target=BlueMove.handle_input, args=[self.sock], daemon=True)
         thread.start()
         
         addr = self.sock.getsockname()
