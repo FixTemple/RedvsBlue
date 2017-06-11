@@ -1,3 +1,13 @@
+# Programmer: Elliott Fix
+#     Temple University, College of Engineering
+# Start Date: December, 2016
+# Version: 
+# Code inspired by YoungsoonLee
+#         https://github.com/YoungsoonLee/chatServer/blob/master/chat_server-eventlet.py
+# Description: Server for multiple clients
+
+
+
 from tkinter import *
 import time
 import threading
@@ -52,11 +62,12 @@ class ThreadedClient:
         # anything
         self.periodicCall()
 
+
     def periodicCall(self):
         """
         Check every 200ms if there is something new in the queue.
         """
-        self.gui.processIncoming()
+        self.gui.process_incoming()
         
         if not self.running:
             # This is the brutal stop of the system. You may want to do
@@ -64,6 +75,7 @@ class ThreadedClient:
             import sys
             sys.exit(1)
         self.master.after(200, self.periodicCall)
+
 
     def workerThread1(self):
         """
@@ -89,10 +101,12 @@ class ThreadedClient:
 #            msg = rand.random()
             self.queue.put(msg)
 
+
     def endApplication(self):
         self.running = 0
 
 
 root = Tk()   
+root.title("Red vs. Blue: Blue Client")
 ThreadedClient(root)
 root.mainloop()
