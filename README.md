@@ -16,15 +16,18 @@ The server must be started before either client.
 To start a server  
 ```
   python3 RedBlueServer.py
+  
 ```
 
 To start a blue client  
-```python3 BlueClient.py 
+```
+python3 BlueClient.py 
   
 ```
 
 To start a red client  
-```python3 RedClient.py 
+```
+python3 RedClient.py 
   
 ```
 
