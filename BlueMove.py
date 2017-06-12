@@ -173,7 +173,7 @@ class BlueMove(object):
                 cord=msg[-4:-2]
                 if (msg[0]=='M' and msg[-1:]=='B'):
                     self.label_turn.configure(text="Red's turn")
-                    self.pointTotal -= int(self.buttongroup[cord].text)
+                    self.pointTotal -= int(self.buttongroup[cord]['text'])
                     self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal))
                     self.root.update()
                     self.redraw(cord)
