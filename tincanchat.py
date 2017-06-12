@@ -1,8 +1,7 @@
 import socket
 
-HOST = ''
+HOST = '127.0.0.1'
 PORT = 4040
-
 
 def create_listen_socket(host, port):
     """ Setup the sockets our server will receive connection requests on """
@@ -17,7 +16,7 @@ def recv_msg(sock):
     """ Wait for data to arrive on the socket, then parse into message using b'\0' as message delimiter """
     data = bytearray()
     msg = ''
-    # Repeatly read 4096 bytes off the socket, storing the bytes
+    # Repeatedly read 4096 bytes off the socket, storing the bytes
     # in data until we see a delimiter
     while not msg:
         recvd = sock.recv(4096)
@@ -68,3 +67,5 @@ def recv_msgs(sock, data=bytes()):
         (msgs, rest) = parse_recvd_data(data)
     msgs = [msg.decode('utf-8') for msg in msgs]
     return (msgs, rest)
+
+
