@@ -11,6 +11,8 @@
 import eventlet
 import eventlet.queue as queue
 import tincanchat
+from imp import reload
+import unittest
 
 
 class RedBlueServer:
@@ -59,12 +61,11 @@ class RedBlueServer:
                     if (red_turn):
                         if (len(grid_map[cord])==0):
                             self.grid_map[cord] = 'R'
-                            msg='M-'+cord+':R'
+                            msg='M-'+cord+':R'                                  # R:  New verified coordinate of Red's position
                         else:
-                            msg='M-'+cord+'BX'        # BX: Blue has blocked this position
+                            msg='M-'+cord+'BX'                                  # BX: Blue has blocked this position
                         self.red_turn = False
                         self.broadcast_msg(msg)
-                    
                         msg = '{}:{}'.format(addr, msg)
                         print("--->" + msg )
                     else:
@@ -82,9 +83,9 @@ class RedBlueServer:
                     if (not red_turn):
                         if(len(grid_map[cord])==0):
                             self.grid_map[cord] = 'B'
-                            msg='M-'+cord+':B'
+                            msg='M-'+cord+':B'                                  # B:  New verified coordinate of Blue's position
                         else:
-                            msg='M-'+cord+'RX'        # RX: Red has blocked this position
+                            msg='M-'+cord+'RX'                                  # RX: Red has blocked this position
                         self.red_turn = True
                         self.broadcast_msg(msg)
                     else:
@@ -143,10 +144,13 @@ class RedBlueServer:
             addr = sock.getpeername()
             print('Client {} disconnected'.format(addr))
             sock.close()
+            #os.execl(sys.executable, sys.executable, *sys.argv).               #Restart program?
+            #reload(self.__init__)
 
     
 
 if __name__ == '__main__':
     
+    #unittest.RedBlueServer()
     newserver = RedBlueServer()
     
