@@ -13,10 +13,12 @@ import tincanchat
 from multiprocessing import Queue
 import queue
 from RedBlueServer import RedBlueServer
+from imp import reload
 
 
 class RedMove(object):
     pointTotal = 0
+    pointList = [20,40,50,10,20,50,20,40,50]
     point11 = 20
     point12 = 40
     point13 = 50
@@ -29,6 +31,9 @@ class RedMove(object):
     delayCost = 10
     sendAttackCost = 0
     max_grid_point = 33
+    max_x_point = 3
+    max_y_point = 3
+    RedLog = [0]
 
     
     
@@ -85,12 +90,14 @@ class RedMove(object):
         self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal))
         
     def SendAttack(self):
-        msg = 'RA'
+        self.AttackWindow(self)
+        msg = 'RA' + self.AttackArea
         self.button_check_send(msg, self.pointTotal, self.sendAttackCost)
         
     def testReset(self):
         self.pointTotal = 0
-    
+        reload(self.__init__)
+        #os.execl(sys.executable, sys.executable, *sys.argv)                    #Resets program? Linux only?
     
     def quit(self):
         msg ='q'
@@ -114,6 +121,10 @@ class RedMove(object):
         self.buttongroup =  {'13': self.button13 , '23': self.button23 , '33': self.button33,
                              '12': self.button12 , '22': self.button22 , '32': self.button32,
                              '11': self.button11 , '21': self.button21 , '31': self.button31};
+                             
+        self.buttonActivation = {'13': 1, '23': 1, '33': 1,
+                                 '12': 1, '22': 1, '32': 1,
+                                 '11': 1, '21': 1, '31': 1};
         
         #Assign text to labels
         self.label_x1 = Label(root, text = '1', height=height, width=width)
@@ -134,16 +145,16 @@ class RedMove(object):
         self.testReset = Button(root, text = "Test\nReset", command = self.testReset, height=height, width=width)
         
         #Align labels and buttons in grid
-        self.label_x1.grid(row=0, column=1)
-        self.label_x2.grid(row=0, column=2)
-        self.label_x3.grid(row=0, column=3)
+        self.label_x1.grid(row=4, column=1)
+        self.label_x2.grid(row=4, column=2)
+        self.label_x3.grid(row=4, column=3)
         self.label_y3.grid(row=1, column=0)
         self.label_y2.grid(row=2, column=0)
         self.label_y1.grid(row=3, column=0)
-        self.label_pointTotal.grid(columnspan=4)
-        self.label_turn.grid(row=4, column=0)
+        self.label_pointTotal.grid(row = 5, columnspan=5)
+        self.label_turn.grid(row=5, column=0)
         self.label_Actions.grid(row=0, column=5)
-        self.server_textbox.grid(row=5, column=0, columnspan=3)
+        self.server_textbox.grid(row=6, column=0, columnspan=3)
         self.server_textbox.insert(INSERT, "From Server: ")
         self.button11.grid(row=3, column=1)
         self.button12.grid(row=2, column=1)
@@ -168,29 +179,44 @@ class RedMove(object):
                 msg = self.queue.get(0).strip()
                 cord=msg[-4:-2]
                 print("From Server: " + msg)
-                if (msg[0]=='M' and msg[-1:]=='R'):
+                if (msg[0]=='M' and msg[-1:]=='R'):                             #Red successfully moved to a position
                     self.label_turn.configure(text="Blue's turn")
+                    self.update_score(int(cord))
+                    self.buttongroup[cord].configure(state = DISABLED)
+                    self.buttonActivation[cord] = 0
                     self.root.update()
                     self.redraw(cord)
-                    print(msg)
+                    msg = "You're in position (" + cord[0] + "," + cord[1] + ")" 
+                    self.update_server_textbox(msg)
+                    print("Sent to textbox: " + msg)
+                    self.RedLog.append(cord)                                     #Add Red's new position to the move log
+                    print(self.RedLog)
+                    print("\n\n")
                     
-                elif (msg[0]=='M' and msg[-1:]=='B'):
+                elif (msg[0]=='M' and msg[-1:]=='B'):                           #Blue successfully moved to a position
                     self.label_turn.configure(text="Red's turn")
                     self.root.update()
                 
-                elif (msg[0]=='M' and msg[-2:]=='BX'):
+                elif (msg[0]=='M' and msg[-2:]=='BX'):                          #Red attempted to move into a position controlled by Blue
                     self.label_turn.configure(text="Blue's turn")
+                    self.update_score(int(cord))
                     self.root.update()
                     msg = "Blocked by Blue"
                     self.buttongroup[cord].configure(bg = self.bluecolor)
                     self.update_server_textbox(msg)
+                    print("Sent to Server: " + msg)
+                    self.RedLog.append(cord+'-X')                               #Add Red's attempted position to the move log (X = blocked)
+                    print(self.RedLog)
+                    print("\n\n")
                     
-                elif (msg[0]=='M' and msg[-2:]=='RX'):
+                elif (msg[0]=='M' and msg[-2:]=='RX'):                          #Blue attempted to move into a position controlled by Red
                     self.label_turn.configure(text="Red's turn")
                     self.root.update()
-                    msg = "Blocked by Red"
+                    #msg = "Blocked by Red"                                     #Does not show red where Blue moved to
                     self.buttongroup[cord].configure(bg = self.redcolor)
                     self.update_server_textbox(msg)
+                    print("Sent to Server: " + msg)
+                    print("\n\n")
                     
                 elif (msg[0]=='*' and msg[1]=='R'):
                     self.update_server_textbox(msg[3:32])
@@ -204,16 +230,38 @@ class RedMove(object):
                 pass
             
 
+    def update_score(self, cord):
+        self.pointTotal = self.pointTotal - self.convert_cord(cord)
+        self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal)) 
+        
+        
+    def convert_cord(self, cord):
+        if cord == 11:
+            return self.point11
+        if cord == 12:
+            return self.point12
+        if cord == 13:
+            return self.point13
+        if cord == 21:
+            return self.point21
+        if cord == 22:
+            return self.point22
+        if cord == 23:
+            return self.point23
+        if cord == 31:
+            return self.point31
+        if cord == 32:
+            return self.point32
+        if cord == 33:
+            return self.point33
+    
+    
     def button_check_send(self, msg, score, cost):
-        if ( True ): ######### FIX THIS so that points aren't deducted when attempting to move when it is not your turn
-            message = msg
-            tincanchat.send_msg(self.sock, message)
-            self.pointTotal -= cost
-            self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal)) 
-        else:
-            msg = "Invalid move; wait your turn!\n"
-            self.update_server_textbox(msg)
- 
+        message = msg
+        tincanchat.send_msg(self.sock, message)
+        msg = "Invalid move; wait your turn!\n"
+        self.update_server_textbox(msg)
+
  
     def redraw(self, cord):
         print("Current Location: " + cord)
@@ -221,49 +269,59 @@ class RedMove(object):
         
         #convert the coordinate to an integer
         cord = int(cord)
+        
         #check left coordinate availability
         if (cord-10 >= 11):
-            self.buttongroup[str(cord-10)].configure(state = NORMAL)
+            if ( self.buttonActivation[str(cord-10)] == 1 ):
+                self.buttongroup[str(cord-10)].configure(state = NORMAL)
             
         #check up and left availability    
-        if (cord-9 >= 11 and cord-9 <= self.max_grid_point):
-            self.buttongroup[str(cord-9 )].configure(state = NORMAL)
+        if (((cord-9 >= 12) and ((cord-9) % 10) <= (self.max_y_point)) and (cord-9 <= self.max_grid_point)):
+            if ( self.buttonActivation[str(cord-9)] == 1 ):
+                self.buttongroup[str(cord-9 )].configure(state = NORMAL)
             
         #check right coordinate availability
         if (cord+10 <= self.max_grid_point):
-            self.buttongroup[str(cord+10)].configure(state = NORMAL)
+            if (self.buttonActivation[str(cord+10)] == 1):
+                self.buttongroup[str(cord+10)].configure(state = NORMAL)
                         
         #check up and right coordinate availability
         if (cord+11 <= self.max_grid_point):
-            self.buttongroup[str(cord+11)].configure(state = NORMAL)
+            if (self.buttonActivation[str(cord+11)] == 1):
+                self.buttongroup[str(cord+11)].configure(state = NORMAL)
             
         #check up availability
-        if (cord+1 <= self.max_grid_point):
-            self.buttongroup[str(cord+1 )].configure(state = NORMAL)
+        if (((cord+1) % 10) <= self.max_y_point):
+            if (self.buttonActivation[str(cord+1)] == 1):
+                self.buttongroup[str(cord+1 )].configure(state = NORMAL)
             
-        #close blocks too far left
+        #close block too far left
         if (cord-20 >= 11):
-            self.buttongroup[str(cord-20)].configure(state = DISABLED)
+            if (self.buttonActivation[str(cord-20)] == 1):
+                self.buttongroup[str(cord-20)].configure(state = DISABLED)
             
-        #close blocks too far up and left
-        if (cord-19 >= self.max_grid_point):
-            self.buttongroup[str(cord-19)].configure(state = DISABLED)
+        #close block too far up and left
+        if (cord-19 >= 12 and cord-19 <= self.max_grid_point):
+            if (self.buttonActivation[str(cord-19)] == 1):
+                self.buttongroup[str(cord-19)].configure(state = DISABLED)
             
         #close blocks too far right
         if (cord+20 <= self.max_grid_point):
-            self.buttongroup[str(cord+20)].configure(state = DISABLED)
+            if (self.buttonActivation[str(cord+20)] == 1):
+                self.buttongroup[str(cord+20)].configure(state = DISABLED)
             
         #close blocks too far up and right
         if (cord+21 <= self.max_grid_point):
-            self.buttongroup[str(cord+21)].configure(state = DISABLED)
+            if (self.buttonActivation[str(cord+21)] == 1):
+                self.buttongroup[str(cord+21)].configure(state = DISABLED)
             
-        #close blocks from grid row 3
+        #close blocks underneath, in grid row 1
         if ( (cord % 10) == 2 ):
             self.buttongroup['11'].configure(state = DISABLED)
             self.buttongroup['21'].configure(state = DISABLED)
             self.buttongroup['31'].configure(state = DISABLED)
         
-        #close blocks from grid row 2    
+        #close blocks underneath, in grid row 2    
         if ( (cord % 10) == 3 ):
             self.buttongroup['12'].configure(state = DISABLED)
             self.buttongroup['22'].configure(state = DISABLED)
@@ -275,11 +333,27 @@ class RedMove(object):
         self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal))
         
         
-    # Updates the server textbox by clearing text and printing the given message
+    # Updates the server text box by clearing text and printing the given message
     def update_server_textbox(self, msg):
         self.server_textbox.delete('1.0', END)
         self.server_textbox.insert(INSERT, "From Server:\n" + msg)
         self.root.update()
+        
+    
+    # Creates a pop-up window with three choices to attack when Red sends attack
+    def AttackWindow(self):
+        win = tk.Toplevel()
+        win.wm_title("Choose the Area of Attack")
+    
+        text = tk.Label(win, text="Input")
+        l.grid(row=0, column=0)
+    
+        b = tk.WinButton1(win, text="1", command=win.destroy)
+        b.grid(row=1, column=0)
+        b = tk.WinButton1(win, text="2", command=win.destroy)
+        b.grid(row=2, column=0)
+        b = tk.WinButton1(win, text="3", command=win.destroy)
+        b.grid(row=3, column=0)
         
         
     # Function for the Delay Move button: Waits one turn, costs resources
