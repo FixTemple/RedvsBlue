@@ -16,7 +16,8 @@ from RedBlueServer import RedBlueServer
 
 
 class BlueMove(object):
-    pointTotal = 200
+    startingPointTotal = 150
+    pointTotal = 150
     point11 = 20
     point12 = 40
     point13 = 50
@@ -31,7 +32,8 @@ class BlueMove(object):
     bluecolor = 'lightblue'
     redcolor = 'red'
     redposition = ""
-        
+    BlueLog = [0]
+            
     #Button controls
     def __init__(self, master, queue, endCommand, sock):        
         self.queue = queue
@@ -84,7 +86,10 @@ class BlueMove(object):
         self.ping_red(self.pingCost, self.pointTotal)
         
     def testReset(self):
-        self.pointTotal = 0
+        self.pointTotal = self.startingPointTotal
+        reload(self.__init__)
+        #os.execl(sys.executable, sys.executable, *sys.argv)
+
         
     def quit(self):
         msg ='q'
@@ -115,7 +120,7 @@ class BlueMove(object):
         self.label_y1 = Label(root, text = '1', height=height, width=width)
         self.label_y2 = Label(root, text = '2', height=height, width=width)
         self.label_y3 = Label(root, text = '3', height=height, width=width)
-        self.label_pointTotal = Label(root, text = ("Point Total: " + str(self.pointTotal)), height=height, width=width)
+        self.label_pointTotal = Label(root, text = ("Point Total: " + str(self.startingPointTotal)), height=height, width=width)
         self.label_turn = Label(root, text = ("Red's Turn"), height=height, width=width)
         self.label_Actions = Label(root, text = 'Actions: ', height=height, width=width)
         self.server_textbox = Text(root, height=height, width=3*width, pady=2)
@@ -127,16 +132,16 @@ class BlueMove(object):
         self.testReset = Button(root, text = "Test\nReset", command = self.testReset, height=height, width=width)
         
         #Align labels and buttons in grid
-        self.label_x1.grid(row=0, column=1)
-        self.label_x2.grid(row=0, column=2)
-        self.label_x3.grid(row=0, column=3)
+        self.label_x1.grid(row=4, column=1)
+        self.label_x2.grid(row=4, column=2)
+        self.label_x3.grid(row=4, column=3)
         self.label_y3.grid(row=1, column=0)
         self.label_y2.grid(row=2, column=0)
         self.label_y1.grid(row=3, column=0)
-        self.label_pointTotal.grid(columnspan=4)
-        self.label_turn.grid(row=4, column=0)
+        self.label_pointTotal.grid(row = 5, columnspan=5)
+        self.label_turn.grid(row=5, column=0)
         self.label_Actions.grid(row=0, column=5)
-        self.server_textbox.grid(row=5, column=0, columnspan=3)
+        self.server_textbox.grid(row=6, column=0, columnspan=3)
         self.server_textbox.insert(INSERT, "From Server:\n")
         self.button13.grid(row=1, column=1)
         self.button12.grid(row=2, column=1)
@@ -154,16 +159,6 @@ class BlueMove(object):
 
         
     #Misc and Button Functions
-    def button_check_send(self, msg, score, cost):
-        if (score > cost):
-            if (self.resource_check(cost, score)):
-                message = msg
-                tincanchat.send_msg(self.sock, message)
-            else:
-                return False
-        else:
-            self.update_server_textbox(msg)
-            
         
     def process_incoming(self):    
         while self.queue.qsize():
@@ -172,32 +167,43 @@ class BlueMove(object):
                 print("From Server: " + msg)
                 cord=msg[-4:-2]
                 if (msg[0]=='M' and msg[-1:]=='B'):
+                    print ("This is shitty")
                     self.label_turn.configure(text="Red's turn")
-                    self.pointTotal -= int(self.buttongroup[cord]['text'])
-                    self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal))
+                    self.update_score(int(cord))
                     self.root.update()
                     self.redraw(cord)
-                    print(msg)
+                    msg = "You're in position (" + cord[0] + "," + cord[1] + ")" 
+                    self.update_server_textbox(msg)
+                    print("Sent to textbox: " + msg)
+                    self.BlueLog.append(cord)                                    #Add Blue's new position to the move log
+                    print(self.BlueLog)
+                    print("\n\n")
                     
                 elif (msg[0]=='M' and msg[-1:]=='R'):
                     self.label_turn.configure(text="Blue's turn")
                     self.root.update()
                     self.redposition = msg[2:4]
-                    self.update_score(msg, self.pointTotal)
-                                    
+                
                 elif (msg[0]=='M' and msg[-2:]=='BX'):
                     self.label_turn.configure(text="Blue's turn")
-                    self.root.update()
                     msg = "Blocked by Blue"
                     self.buttongroup[cord].configure(bg = self.bluecolor)
                     self.update_server_textbox(msg)
+                    self.root.update()
+                    print("Sent to Server: " + msg)
+                    print("\n\n")
                 
                 elif (msg[0]=='M' and msg[-2:]=='RX'):
                     self.label_turn.configure(text="Red's turn")
+                    self.update_score(int(cord))
                     self.root.update()
                     msg = "Blocked by Red"
                     self.buttongroup[cord].configure(bg = self.redcolor)
                     self.update_server_textbox(msg)
+                    print("Sent to Server: " + msg)
+                    self.BlueLog.append(cord+'-X')                                #Add Blue's attempted position to the move log (X = blocked)
+                    print(self.BlueLog)
+                    print("\n\n")
                     
                 elif (msg[0]=='*' and msg[1]=='B'):
                     self.update_server_textbox(msg[3:31])
@@ -209,6 +215,43 @@ class BlueMove(object):
                 # just on general principles, although we don't
                 # expect this branch to be taken in this case
                 pass
+            
+    
+    def update_score(self, cord):
+        self.pointTotal = self.pointTotal - self.convert_cord(cord)
+        self.label_pointTotal.config(text = "Point Total: " + str(self.pointTotal))
+        
+        
+    def convert_cord(self, cord):
+        if cord == 11:
+            return self.point11
+        if cord == 12:
+            return self.point12
+        if cord == 13:
+            return self.point13
+        if cord == 21:
+            return self.point21
+        if cord == 22:
+            return self.point22
+        if cord == 23:
+            return self.point23
+        if cord == 31:
+            return self.point31
+        if cord == 32:
+            return self.point32
+        if cord == 33:
+            return self.point33
+
+    
+    def button_check_send(self, msg, score, cost):
+        if (score > cost):
+            if (self.resource_check(cost, score)):
+                message = msg
+                tincanchat.send_msg(self.sock, message)
+            else:
+                return False
+        else:
+            self.update_server_textbox(msg)
     
     
     def redraw(self, cord):
@@ -222,12 +265,6 @@ class BlueMove(object):
         self.server_textbox.delete('1.0', END)
         self.server_textbox.insert(INSERT, "From Server:\n" + msg)
         self.root.update()
-        
-    def update_score(self, msg, score):
-        print(msg)
-#        score = score - cost
-        self.label_pointTotal.config(text = "Point Total: " + str(score))
-        print (score)
         
 
     def ping_red(self, cost, score):
